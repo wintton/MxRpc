@@ -1,10 +1,12 @@
 package com.mxspace.rpc;
 
-import com.mxspace.rpc.annotation.EnableMxRpc;
+import com.mxspace.rpc.annotation.EnableMxRpcClient;
+import com.mxspace.rpc.annotation.EnableMxRpcServer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@EnableMxRpc
+@EnableMxRpcClient
+@EnableMxRpcServer
 @SpringBootApplication
 public class App {
 

@@ -11,5 +11,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Import(MxRpcServer.class)
-public @interface EnableMxRpc {
+public @interface EnableMxRpcServer {
 }

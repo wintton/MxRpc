@@ -8,6 +8,8 @@ import lombok.Data;
 @Data
 public class MxRpcRequest {
 
+    static final long serialVersionUID = 1L;
+
     /**
      * 请求对象的ID
      */

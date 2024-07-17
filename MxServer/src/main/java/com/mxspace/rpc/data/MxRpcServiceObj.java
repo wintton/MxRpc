@@ -38,14 +38,35 @@ public class MxRpcServiceObj {
     private Integer weightIndex = 0;
 
     /**
+     * 添加服务提供者
+     * @param mxRpcProviderObj
+     */
+    public void addProvider(MxRpcProviderObj mxRpcProviderObj){
+        providerObjList.add(mxRpcProviderObj);
+    }
+
+    /**
+     * 移除服务提供者
+     * @param mxRpcProviderObj
+     */
+    public void removeProvider(MxRpcProviderObj mxRpcProviderObj){
+        providerObjList.remove(mxRpcProviderObj);
+    }
+
+
+    /**
      * 访问
      */
-    private boolean visit(MxRpcRequest rpcRequest){
+    public String visit(MxRpcRequest rpcRequest){
         if (providerObjList.isEmpty()){
-            return false;
+            return null;
         }
         MxRpcProviderObj mxRpcProviderObj = getNextProvider(rpcRequest);
-        return mxRpcProviderObj.sendRequest(rpcRequest);
+        if (mxRpcProviderObj != null){
+            return null;
+        }
+        boolean result = mxRpcProviderObj.sendRequest(rpcRequest);
+        return result?mxRpcProviderObj.getCtxId():null;
     }
 
     /**

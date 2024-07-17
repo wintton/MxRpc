@@ -1,6 +1,8 @@
 package com.mxspace.rpc.data;
 
+import com.alibaba.fastjson.JSONObject;
 import com.mxspace.rpc.util.MxRpcRequest;
+import com.mxspace.rpc.util.MxRpcResponse;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.Data;
 
@@ -31,10 +33,43 @@ public class MxRpcProviderObj {
     private Integer sendNumber;
 
     /**
+     * 服务名称
+     */
+    private String serviceName;
+
+    /**
+     * 连接对象
+     */
+    private ChannelHandlerContext context;
+
+    /**
      * 发送请求
      * @param rpcRequest
      */
     public boolean sendRequest(MxRpcRequest rpcRequest){
-        return false;
+
+        if (context == null){
+            return false;
+        }
+
+        context.writeAndFlush(JSONObject.toJSONString(rpcRequest));
+
+        return true;
+    }
+
+    /**
+     * 发送回复消息
+     * @param mxRpcResponse
+     * @return
+     */
+    public boolean sendResponse(MxRpcResponse mxRpcResponse){
+
+        if (context == null){
+            return false;
+        }
+
+        context.writeAndFlush(JSONObject.toJSONString(mxRpcResponse));
+
+        return true;
     }
 }

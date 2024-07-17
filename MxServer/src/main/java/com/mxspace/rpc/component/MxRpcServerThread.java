@@ -1,5 +1,11 @@
 package com.mxspace.rpc.component;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.ParserConfig;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.mxspace.rpc.service.MxRpcClientManService;
+import com.mxspace.rpc.util.*;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -17,6 +23,8 @@ import java.nio.channels.SocketChannel;
 @Slf4j
 public class MxRpcServerThread extends Thread {
 
+
+
     /**
      * 端口号
      */
@@ -28,8 +36,11 @@ public class MxRpcServerThread extends Thread {
 
     ChannelFuture future;
 
-    public MxRpcServerThread(int port){
+    MxRpcClientManService mxRpcClientManService;
+
+    public MxRpcServerThread(int port,MxRpcClientManService mxRpcClientManService){
         this.port = port;
+        this.mxRpcClientManService = mxRpcClientManService;
     }
 
 
@@ -59,7 +70,7 @@ public class MxRpcServerThread extends Thread {
 
                             pipeline.addLast(new StringEncoder());
 
-                            pipeline.addLast(new MxRpcServerHandler());
+                            pipeline.addLast(new MxRpcServerHandler(mxRpcClientManService));
                         }
 
                     })
@@ -91,5 +102,17 @@ public class MxRpcServerThread extends Thread {
         boss.shutdownGracefully();
 
         log.error("MxRpc服务端关闭：");
+    }
+
+    public static void main(String[] args) {
+        ParserConfig globalInstance = ParserConfig.getGlobalInstance();
+        globalInstance.setAutoTypeSupport(true);
+        globalInstance.addAccept(MxRpcHeartBeat.class.getTypeName());
+        globalInstance.addAccept(MxRpcRequest.class.getTypeName());
+        globalInstance.addAccept(MxRpcResponse.class.getTypeName());
+        globalInstance.addAccept(MxRpcLogin.class.getTypeName());
+        globalInstance.addAccept(MxRpcHandleObj.class.getTypeName());
+        String s = JSON.toJSONString(new MxRpcLogin(), SerializerFeature.WriteClassName);
+        System.out.println(JSON.parse(s));
     }
 }

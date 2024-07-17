@@ -1,14 +1,9 @@
 package com.mxspace.rpc.service;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.mxspace.rpc.data.MxRpcProviderObj;
 import com.mxspace.rpc.data.MxRpcServerConfig;
 import com.mxspace.rpc.data.MxRpcServiceObj;
-import com.mxspace.rpc.util.FutureRpcData;
-import com.mxspace.rpc.util.MxRpcLogin;
-import com.mxspace.rpc.util.MxRpcRequest;
-import com.mxspace.rpc.util.MxRpcResponse;
+import com.mxspace.rpc.util.*;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -45,35 +41,154 @@ public class MxRpcClientManService {
     private Map<String, MxRpcProviderObj> rpcProviderObjMap = new ConcurrentHashMap<>();
 
     /**
-     * 任务ID-
+     * 任务ID-来源目标对象
      */
-    private Map<String, FutureRpcData> taskMap = new ConcurrentHashMap<>();
+    private Map<String, MxRpcHandleObj> taskMap = new ConcurrentHashMap<>();
 
+    /**
+     * 检查是否登录
+     * @param context
+     * @return
+     */
     public boolean checkLogin(ChannelHandlerContext context){
         String clientId = clientLinkMap.get(context);
-        return clientId == null;
+        return clientId != null;
     }
 
+    /**
+     * 获取对象ID
+     * @param context
+     * @return
+     */
+    public String getClientId(ChannelHandlerContext context){
+        return clientLinkMap.get(context);
+    }
+
+    /**
+     * 登录线
+     * @param context
+     */
+    public void loginOut(ChannelHandlerContext context){
+        String ctxId = clientLinkMap.get(context);
+        if (ctxId == null){
+            return;
+        }
+        MxRpcProviderObj mxRpcProviderObj = rpcProviderObjMap.get(ctxId);
+        if (mxRpcProviderObj == null){
+            return;
+        }
+        MxRpcServiceObj mxRpcServiceObj = rpcServiceObjMap.get(mxRpcProviderObj.getServiceName());
+        if (mxRpcServiceObj == null){
+            return;
+        }
+        mxRpcServiceObj.removeProvider(mxRpcProviderObj);
+    }
+
+    /**
+     * 添加提供者
+     * @param context
+     * @param mxRpcLogin
+     */
+    public void loginIn(ChannelHandlerContext context,MxRpcLogin mxRpcLogin){
+        String ctxId = UUID.randomUUID().toString();
+        MxRpcProviderObj mxRpcProviderObj = new MxRpcProviderObj();
+        mxRpcProviderObj.setClientId(mxRpcLogin.getClientId());
+        mxRpcProviderObj.setCtxId(ctxId);
+        mxRpcProviderObj.setWeight(mxRpcLogin.getWeight());
+        mxRpcProviderObj.setContext(context);
+        MxRpcServiceObj mxRpcServiceObj = rpcServiceObjMap.computeIfAbsent(mxRpcLogin.getServiceName(),k -> new MxRpcServiceObj());
+        mxRpcServiceObj.addProvider(mxRpcProviderObj);
+
+        MxRpcResponse mxRpcResponse = new MxRpcResponse();
+        mxRpcResponse.setResult(BaseResult.success());
+        mxRpcResponse.setRequestId(mxRpcLogin.getClientId());
+        context.writeAndFlush(FastJsonUtil.toJSONString(mxRpcResponse));
+
+        clientLinkMap.put(context,ctxId);
+        rpcProviderObjMap.put(ctxId,mxRpcProviderObj);
+    }
+
+    /**
+     * 处理接收到的消息
+     * @param context
+     * @param dataJson
+     */
     public void handleMsg(ChannelHandlerContext context,String dataJson){
         try {
-            boolean isLogin = checkLogin(context);
-            Object handleObject = JSONObject.parse(dataJson);
+            String ctxId = getClientId(context);
+            log.info("服务端收到消息：{}",ctxId,dataJson);
+            boolean isLogin = ctxId != null;
+            Object handleObject = FastJsonUtil.parse(dataJson);
             if (handleObject instanceof MxRpcLogin){
                 MxRpcLogin mxRpcLogin = (MxRpcLogin)handleObject;
                 if (mxRpcServerConfig.getPassword().equals(mxRpcLogin.getLoginPassword())){
-                    MxRpcProviderObj mxRpcProviderObj = new MxRpcProviderObj();
+                    //登录成功记录
+                    loginIn(context,mxRpcLogin);
                 } else {
-
+                    MxRpcResponse mxRpcResponse = new MxRpcResponse();
+                    mxRpcResponse.setResult(BaseResult.fail("密码验证失败"));
+                    mxRpcResponse.setError("密码验证失败");
+                    mxRpcResponse.setRequestId(mxRpcLogin.getClientId());
+                    context.writeAndFlush(FastJsonUtil.toJSONString(mxRpcResponse));
+                    context.close();
                 }
+                return;
             }
             if (!isLogin){
                 return;
             }
             if (handleObject instanceof MxRpcRequest){
                 //请求对象
+                MxRpcRequest mxRpcRequest = (MxRpcRequest)handleObject;
+                MxRpcHandleObj mxRpcHandleObj = new MxRpcHandleObj();
+                mxRpcHandleObj.setRequestId(mxRpcHandleObj.getRequestId());
+                mxRpcHandleObj.setRequestCtxId(ctxId);
+
+                MxRpcServiceObj mxRpcServiceObj = rpcServiceObjMap.get(mxRpcRequest.getServiceName());
+
+                boolean isGetPro = mxRpcServiceObj != null;
+
+                if (isGetPro){
+                    String  visitCtxId = mxRpcServiceObj.visit(mxRpcRequest);
+                    if (visitCtxId == null){
+                        isGetPro = false;
+                    } else {
+                        MxRpcHandleObj rpcHandleObj = new MxRpcHandleObj();
+                        rpcHandleObj.setRequestCtxId(ctxId);
+                        rpcHandleObj.setResponseCtxId(visitCtxId);
+                        rpcHandleObj.setRequestId(mxRpcRequest.getRequestId());
+                        taskMap.put(mxRpcHandleObj.getRequestId(),mxRpcHandleObj);
+                    }
+                }
+
+                if (!isGetPro){
+                    MxRpcResponse mxRpcResponse = new MxRpcResponse();
+                    mxRpcResponse.setResult(BaseResult.fail("当前没有对应服务提供者"));
+                    mxRpcResponse.setError("当前没有对应服务提供者");
+                    mxRpcResponse.setRequestId(mxRpcRequest.getRequestId());
+                    context.writeAndFlush(FastJsonUtil.toJSONString(mxRpcResponse));
+                }
+
             } else if (handleObject instanceof MxRpcResponse){
                 //回复对象
+                MxRpcResponse mxRpcResponse = (MxRpcResponse)handleObject;
+                MxRpcHandleObj mxRpcHandleObj = taskMap.get(mxRpcResponse.getRequestId());
+                if (mxRpcHandleObj == null ||
+                    !ctxId.equalsIgnoreCase(mxRpcHandleObj.getResponseCtxId())){
+                    //未知回复 丢弃
+                    log.info("丢弃消息：{}",mxRpcResponse.getRequestId());
+                } else {
+                    String requestCtxId = mxRpcHandleObj.getRequestCtxId();
+                    MxRpcProviderObj mxRpcProviderObj = rpcProviderObjMap.get(requestCtxId);
+                    if (mxRpcProviderObj == null){
+                        return;
+                    }
+                    mxRpcProviderObj.sendResponse(mxRpcResponse);
+                }
+            } else if (handleObject instanceof MxRpcHeartBeat){
+                //接收到心跳包
             }
+
         } catch (Exception e){
             log.error("数据处理异常:",e);
         }

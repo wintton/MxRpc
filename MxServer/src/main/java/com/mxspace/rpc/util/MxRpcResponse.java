@@ -8,6 +8,8 @@ import lombok.Data;
 @Data
 public class MxRpcResponse {
 
+    static final long serialVersionUID = 1L;
+
     /**
      * 响应ID
      */
@@ -21,6 +23,6 @@ public class MxRpcResponse {
     /**
      * 返回的结果
      */
-    private Object result;
+    private BaseResult result;
 
 }

@@ -15,7 +15,7 @@ public class TestRest {
 
     @GetMapping
     public String getResult(){
-        testService.queryDataInfo("你好");
+        testService.queryDataInfo("哈哈哈哈哈哈");
         return  "0";
     }
 

@@ -1,7 +1,9 @@
 package com.mxspace.rpc.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class TestServiceImpl implements TestService {
     @Override
@@ -11,6 +13,6 @@ public class TestServiceImpl implements TestService {
 
     @Override
     public void queryDataInfo(String info) {
-        System.out.println(info);
+        log.info(info);
     }
 }

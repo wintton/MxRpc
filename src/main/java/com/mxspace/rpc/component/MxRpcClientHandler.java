@@ -1,6 +1,5 @@
 package com.mxspace.rpc.component;
 
-import com.mxspace.rpc.service.MxRpcClientManService;
 import com.mxspace.rpc.service.MxRpcClientService;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

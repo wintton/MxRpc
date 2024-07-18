@@ -1,0 +1,13 @@
+
+mx-rpc:
+  client:
+    id: 1011
+    serviceName: ALL
+    weight: 1
+    link:
+      host: 127.0.0.1
+      port: 8081
+      password: 123456789
+  server:
+    port: 8081
+    password: 123456789

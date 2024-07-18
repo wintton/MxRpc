@@ -93,7 +93,7 @@ public class MxRpcClientManService {
      * @param context
      * @param mxRpcLogin
      */
-    public void loginIn(ChannelHandlerContext context,MxRpcLogin mxRpcLogin){
+    public void loginIn(ChannelHandlerContext context, MxRpcLogin mxRpcLogin){
         String ctxId = UUID.randomUUID().toString();
         MxRpcProviderObj mxRpcProviderObj = new MxRpcProviderObj();
         mxRpcProviderObj.setClientId(mxRpcLogin.getClientId());

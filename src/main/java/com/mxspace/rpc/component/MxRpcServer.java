@@ -39,7 +39,7 @@ public class MxRpcServer implements ImportBeanDefinitionRegistrar {
     /**
      * 访问策略
      */
-    private ProviderVisitStrategyEnums visitStrategy;
+    private volatile static ProviderVisitStrategyEnums visitStrategy;
 
 
     @Override

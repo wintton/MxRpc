@@ -1,10 +1,8 @@
 package com.mxspace.rpc.component;
 
 import com.mxspace.rpc.annotation.EnableMxRpcClient;
-import com.mxspace.rpc.annotation.MxRpcService;
 import com.mxspace.rpc.data.MxRpcClientConfig;
 import com.mxspace.rpc.service.MxRpcClientService;
-import com.mxspace.rpc.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
@@ -39,12 +37,15 @@ public class MxRpcClient implements ApplicationContextAware, InitializingBean, I
     @Resource
     private MxRpcClientService mxRpcClientService;
 
+    public static ApplicationContext applicationContext;
+
     /**
      * 是否开启RPC服务
      */
     private volatile static boolean enableClient = false;
 
     private MxRpcClientThread curRunThread;
+
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -57,27 +58,14 @@ public class MxRpcClient implements ApplicationContextAware, InitializingBean, I
         if (enableEcho != null){
             enableClient = true;
         }
+
     }
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-
-        Map<String, Object> services = applicationContext.getBeansWithAnnotation(MxRpcService.class);
-
-        for (Map.Entry<String, Object> entry : services.entrySet()) {
-
-            Object bean = entry.getValue();
-
-            Class<?>[] interfaces = bean.getClass().getInterfaces();
-
-            for (Class<?> inter : interfaces) {
-
-                rpcServices.put(inter.getName(), bean);
-
-            }
-
-        }
+        this.applicationContext = applicationContext;
     }
+
 
     @PostConstruct
     public void start(){
@@ -96,5 +84,7 @@ public class MxRpcClient implements ApplicationContextAware, InitializingBean, I
         }
         curRunThread.stopRun();
     }
+
+
 
 }

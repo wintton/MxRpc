@@ -3,7 +3,6 @@ package com.mxspace.rpc.component;
 import com.mxspace.rpc.service.MxRpcClientManService;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -67,4 +66,5 @@ public class MxRpcServerHandler extends ChannelInboundHandlerAdapter {
             ctx.close();
         }
     }
+
 }

@@ -62,7 +62,7 @@ public class MxRpcServiceObj {
             return null;
         }
         MxRpcProviderObj mxRpcProviderObj = getNextProvider(rpcRequest);
-        if (mxRpcProviderObj != null){
+        if (mxRpcProviderObj == null){
             return null;
         }
         boolean result = mxRpcProviderObj.sendRequest(rpcRequest);

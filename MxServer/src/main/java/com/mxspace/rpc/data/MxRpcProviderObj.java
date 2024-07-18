@@ -1,6 +1,6 @@
 package com.mxspace.rpc.data;
 
-import com.alibaba.fastjson.JSONObject;
+import com.mxspace.rpc.util.FastJsonUtil;
 import com.mxspace.rpc.util.MxRpcRequest;
 import com.mxspace.rpc.util.MxRpcResponse;
 import io.netty.channel.ChannelHandlerContext;
@@ -52,7 +52,7 @@ public class MxRpcProviderObj {
             return false;
         }
 
-        context.writeAndFlush(JSONObject.toJSONString(rpcRequest));
+        context.writeAndFlush(FastJsonUtil.toJSONString(rpcRequest));
 
         return true;
     }
@@ -68,7 +68,7 @@ public class MxRpcProviderObj {
             return false;
         }
 
-        context.writeAndFlush(JSONObject.toJSONString(mxRpcResponse));
+        context.writeAndFlush(FastJsonUtil.toJSONString(mxRpcResponse));
 
         return true;
     }

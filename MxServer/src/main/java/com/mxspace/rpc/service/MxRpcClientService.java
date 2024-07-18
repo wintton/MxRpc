@@ -1,20 +1,21 @@
 package com.mxspace.rpc.service;
 
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.mxspace.rpc.component.MxRpcClient;
 import com.mxspace.rpc.data.MxRpcClientConfig;
-import com.mxspace.rpc.data.MxRpcServerConfig;
 import com.mxspace.rpc.util.*;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * RPC客户端 服务处理类
@@ -37,6 +38,11 @@ public class MxRpcClientService {
     private boolean loginState = false;
 
     /**
+     * 当前连接对象
+     */
+    private ChannelHandlerContext ctx;
+
+    /**
      * 发送登录请求
      * @param ctx
      */
@@ -46,7 +52,7 @@ public class MxRpcClientService {
         mxRpcLogin.setServiceName(mxRpcClientConfig.getServiceName());
         mxRpcLogin.setLoginPassword(mxRpcClientConfig.getPassword());
         mxRpcLogin.setWeight(mxRpcClientConfig.getWeight());
-        ctx.writeAndFlush(toJSonString(mxRpcLogin));
+        ctx.writeAndFlush(FastJsonUtil.toJSONString(mxRpcLogin));
     }
 
     /**
@@ -64,6 +70,14 @@ public class MxRpcClientService {
      */
     public void handleMsg(ChannelHandlerContext ctx, String msg) {
         log.info("客户端收到消息：{}",msg);
+        if (msg.indexOf("}{") > 0){
+            msg.replaceAll("\\}\\{","}" + FastJsonUtil.END_CODE + "{");
+            String[] split = msg.split(FastJsonUtil.END_CODE);
+            for (String s : split) {
+                handleMsg(ctx,s);
+            }
+            return;
+        }
         Object msgData = FastJsonUtil.parse(msg);
         if (msgData instanceof MxRpcResponse){
             MxRpcResponse mxRpcResponse = (MxRpcResponse) msgData;
@@ -71,14 +85,36 @@ public class MxRpcClientService {
             BaseResult baseResult = mxRpcResponse.getResult();
             if (requestId.equalsIgnoreCase(mxRpcClientConfig.getClientId())){
                 //登录请求
-                loginState = baseResult.getCode() == 200;
+                loginState = baseResult.getCode() == BaseResult.SUCCESS_CODE;
+                this.ctx = ctx;
             } else {
-                FutureRpcData futureRpcData = taskMap.get(requestId);
+                FutureRpcData futureRpcData = taskMap.remove(requestId);
                 if (futureRpcData != null){
-                    futureRpcData.setResult(baseResult.getData());
+                    futureRpcData.setResult(mxRpcResponse);
                 }
             }
+        } else if (msgData instanceof MxRpcRequest){
+            MxRpcRequest mxRpcRequest = (MxRpcRequest) msgData;
+            MxRpcResponse mxRpcResponse = new MxRpcResponse();
+            mxRpcResponse.setRequestId(mxRpcRequest.getRequestId());
+            try {
+                String className = mxRpcRequest.getClassName();
+                String methodName = mxRpcRequest.getMethodName();
+                Object[] parameters = mxRpcRequest.getParameters();
+                Class<?> aClass = Class.forName(className);
+                Object bean = MxRpcClient.applicationContext.getBean(aClass);
+                Method method = aClass.getMethod(methodName, mxRpcRequest.getParameterTypes());
+                Object invoke = method.invoke(bean, parameters);
+                mxRpcResponse.setResult(BaseResult.success(invoke));
+            } catch (Exception e) {
+                mxRpcResponse.setError(e.toString());
+                mxRpcResponse.setResult(BaseResult.fail(e.toString()));
+                log.error("异常",e);
+            } finally {
+                ctx.writeAndFlush(FastJsonUtil.toJSONString(mxRpcResponse));
+            }
         }
+
     }
 
     /**
@@ -91,11 +127,48 @@ public class MxRpcClientService {
         MxRpcHeartBeat mxRpcHeartBeat = new MxRpcHeartBeat();
         mxRpcHeartBeat.setClientId(mxRpcClientConfig.getClientId());
         mxRpcHeartBeat.setServiceName(mxRpcClientConfig.getServiceName());
-        ctx.writeAndFlush(toJSonString(mxRpcHeartBeat));
+        ctx.writeAndFlush(FastJsonUtil.toJSONString(mxRpcHeartBeat));
     }
 
-    public String toJSonString(Object object){
-        return FastJsonUtil.toJSONString(object);
+    /**
+     * 发送请求
+     * @param mxRpcRequest
+     * @return
+     */
+    public boolean sendRequest(MxRpcRequest mxRpcRequest,FutureRpcData futureRpcData){
+        if (!this.loginState){
+            return false;
+        }
+        mxRpcRequest.setRequestId(UUID.randomUUID().toString());
+        taskMap.put(mxRpcRequest.getRequestId(),futureRpcData);
+        this.ctx.writeAndFlush(FastJsonUtil.toJSONString(mxRpcRequest));
+        return true;
+    }
+
+    /**
+     * 同步发送
+     * @param mxRpcRequest
+     * @return
+     */
+    public MxRpcResponse sendRequestSync(MxRpcRequest mxRpcRequest){
+        if (!this.loginState){
+            return null;
+        }
+        mxRpcRequest.setRequestId(UUID.randomUUID().toString());
+        FutureRpcData<MxRpcResponse> futureRpcData = new FutureRpcData<>();
+        taskMap.put(mxRpcRequest.getRequestId(),futureRpcData);
+        this.ctx.writeAndFlush(FastJsonUtil.toJSONString(mxRpcRequest));
+        try {
+            MxRpcResponse mxRpcResponse = futureRpcData.get(60, TimeUnit.SECONDS);
+            return mxRpcResponse;
+        } catch (InterruptedException e) {
+           log.error("MxRpcClient",e);
+        } catch (ExecutionException e) {
+            log.error("MxRpcClient",e);
+        } catch (TimeoutException e) {
+            log.error("MxRpcClient",e);
+        }
+        return null;
     }
 
 }

@@ -2,8 +2,8 @@ package com.mxspace.rpc.component;
 
 import com.mxspace.rpc.annotation.EnableMxRpcServer;
 import com.mxspace.rpc.data.MxRpcServerConfig;
+import com.mxspace.rpc.enums.ProviderVisitStrategyEnums;
 import com.mxspace.rpc.service.MxRpcClientManService;
-import com.mxspace.rpc.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
@@ -36,12 +36,18 @@ public class MxRpcServer implements ImportBeanDefinitionRegistrar {
 
     private MxRpcServerThread curRunThread;
 
+    /**
+     * 访问策略
+     */
+    private ProviderVisitStrategyEnums visitStrategy;
+
 
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
         Map<String, Object> enableEcho = importingClassMetadata.getAnnotationAttributes(EnableMxRpcServer.class.getName());
         if (enableEcho != null){
             enableServer = true;
+            visitStrategy = (ProviderVisitStrategyEnums)enableEcho.get("visitStrategy");
         }
     }
 
@@ -53,6 +59,9 @@ public class MxRpcServer implements ImportBeanDefinitionRegistrar {
         }
         curRunThread = new MxRpcServerThread(mxRpcServerConfig.getPort(),mxRpcClientManService);
         curRunThread.setName("MxRpcServer");
+        if (visitStrategy != null){
+            curRunThread.setVisitStrategy(visitStrategy);
+        }
         curRunThread.start();
     }
 

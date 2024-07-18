@@ -1,21 +1,19 @@
 package com.mxspace.rpc.component;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.ParserConfig;
-import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.mxspace.rpc.enums.ProviderVisitStrategyEnums;
 import com.mxspace.rpc.service.MxRpcClientManService;
-import com.mxspace.rpc.util.*;
+import com.mxspace.rpc.util.FastJsonUtil;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
-
-import java.nio.channels.SocketChannel;
 
 /**
  * 服务端线程
@@ -38,6 +36,8 @@ public class MxRpcServerThread extends Thread {
 
     MxRpcClientManService mxRpcClientManService;
 
+    ProviderVisitStrategyEnums visitStrategy;
+
     public MxRpcServerThread(int port,MxRpcClientManService mxRpcClientManService){
         this.port = port;
         this.mxRpcClientManService = mxRpcClientManService;
@@ -55,6 +55,8 @@ public class MxRpcServerThread extends Thread {
 
             ServerBootstrap bootstrap = new ServerBootstrap();
 
+            mxRpcClientManService.setVisitStrategy(visitStrategy);
+
             bootstrap.group(boss, worker)
 
                     .childHandler(new ChannelInitializer() {
@@ -63,6 +65,10 @@ public class MxRpcServerThread extends Thread {
                         protected void initChannel(Channel channel) throws Exception {
 
                             ChannelPipeline pipeline = channel.pipeline();
+
+                            ByteBuf delimiter = Unpooled.copiedBuffer(FastJsonUtil.END_CODE.getBytes());
+
+                            pipeline.addLast(new DelimiterBasedFrameDecoder(2048,delimiter));
 
                             pipeline.addLast(new IdleStateHandler(0, 0, 60));
 
@@ -104,15 +110,8 @@ public class MxRpcServerThread extends Thread {
         log.error("MxRpc服务端关闭：");
     }
 
-    public static void main(String[] args) {
-        ParserConfig globalInstance = ParserConfig.getGlobalInstance();
-        globalInstance.setAutoTypeSupport(true);
-        globalInstance.addAccept(MxRpcHeartBeat.class.getTypeName());
-        globalInstance.addAccept(MxRpcRequest.class.getTypeName());
-        globalInstance.addAccept(MxRpcResponse.class.getTypeName());
-        globalInstance.addAccept(MxRpcLogin.class.getTypeName());
-        globalInstance.addAccept(MxRpcHandleObj.class.getTypeName());
-        String s = JSON.toJSONString(new MxRpcLogin(), SerializerFeature.WriteClassName);
-        System.out.println(JSON.parse(s));
+
+    public void setVisitStrategy(ProviderVisitStrategyEnums visitStrategy) {
+        this.visitStrategy = visitStrategy;
     }
 }

@@ -19,9 +19,10 @@ public class FastJsonUtil {
         globalInstance.addAccept(MxRpcHandleObj.class.getTypeName());
     }
 
+    public static final String END_CODE = "$end";
 
-    public static String toJSONString(Object object){
-        return JSON.toJSONString(object, SerializerFeature.WriteClassName);
+    public static Object toJSONString(Object object){
+        return JSON.toJSONString(object, SerializerFeature.WriteClassName) + END_CODE;
     }
 
     public static Object parse(String json){

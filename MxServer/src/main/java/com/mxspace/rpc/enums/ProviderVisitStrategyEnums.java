@@ -1,5 +1,7 @@
 package com.mxspace.rpc.enums;
 
+import lombok.Getter;
+
 /**
  * 访问策略枚举对象
  */
@@ -13,6 +15,7 @@ public enum ProviderVisitStrategyEnums {
     /**
      * 编码
      */
+    @Getter
     private Integer code;
     /**
      * 描述

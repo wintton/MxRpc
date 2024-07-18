@@ -2,20 +2,19 @@ package com.mxspace.rpc.component;
 
 
 import com.mxspace.rpc.data.MxRpcClientConfig;
-import com.mxspace.rpc.service.MxRpcClientManService;
 import com.mxspace.rpc.service.MxRpcClientService;
+import com.mxspace.rpc.util.FastJsonUtil;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * 客户端线程
@@ -62,6 +61,10 @@ public class MxRpcClientThread extends Thread {
                         protected void initChannel(Channel channel) throws Exception {
 
                             ChannelPipeline pipeline = channel.pipeline();
+
+                            ByteBuf delimiter = Unpooled.copiedBuffer(FastJsonUtil.END_CODE.getBytes());
+
+                            pipeline.addLast(new DelimiterBasedFrameDecoder(2048,delimiter));
 
                             pipeline.addLast(new IdleStateHandler(0, 0, 60));
 

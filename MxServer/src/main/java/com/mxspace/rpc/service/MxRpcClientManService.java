@@ -3,12 +3,11 @@ package com.mxspace.rpc.service;
 import com.mxspace.rpc.data.MxRpcProviderObj;
 import com.mxspace.rpc.data.MxRpcServerConfig;
 import com.mxspace.rpc.data.MxRpcServiceObj;
+import com.mxspace.rpc.enums.ProviderVisitStrategyEnums;
 import com.mxspace.rpc.util.*;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.util.Map;
@@ -24,6 +23,11 @@ public class MxRpcClientManService {
 
     @Resource
     private MxRpcServerConfig mxRpcServerConfig;
+
+    /**
+     * 访问策略
+     */
+    private ProviderVisitStrategyEnums visitStrategy = ProviderVisitStrategyEnums.NEXT;
 
     /**
      * 连接对象
@@ -95,8 +99,13 @@ public class MxRpcClientManService {
         mxRpcProviderObj.setClientId(mxRpcLogin.getClientId());
         mxRpcProviderObj.setCtxId(ctxId);
         mxRpcProviderObj.setWeight(mxRpcLogin.getWeight());
+        mxRpcProviderObj.setServiceName(mxRpcLogin.getServiceName());
         mxRpcProviderObj.setContext(context);
-        MxRpcServiceObj mxRpcServiceObj = rpcServiceObjMap.computeIfAbsent(mxRpcLogin.getServiceName(),k -> new MxRpcServiceObj());
+        MxRpcServiceObj mxRpcServiceObj = rpcServiceObjMap.computeIfAbsent(mxRpcLogin.getServiceName(),k -> {
+            MxRpcServiceObj mxRpcServiceObj1 = new MxRpcServiceObj();
+            mxRpcServiceObj1.setVisitStrategy(visitStrategy.getCode());
+            return mxRpcServiceObj1;
+        });
         mxRpcServiceObj.addProvider(mxRpcProviderObj);
 
         MxRpcResponse mxRpcResponse = new MxRpcResponse();
@@ -115,8 +124,17 @@ public class MxRpcClientManService {
      */
     public void handleMsg(ChannelHandlerContext context,String dataJson){
         try {
+            if (dataJson.indexOf("}{") > 0){
+                dataJson.replaceAll("\\}\\{","}" + FastJsonUtil.END_CODE + "{");
+                String[] split = dataJson.split(FastJsonUtil.END_CODE);
+                for (String s : split) {
+                    handleMsg(context,s);
+                }
+                return;
+            }
             String ctxId = getClientId(context);
-            log.info("服务端收到消息：{}",ctxId,dataJson);
+            log.info("服务端收到消息：{}",dataJson);
+
             boolean isLogin = ctxId != null;
             Object handleObject = FastJsonUtil.parse(dataJson);
             if (handleObject instanceof MxRpcLogin){
@@ -141,7 +159,7 @@ public class MxRpcClientManService {
                 //请求对象
                 MxRpcRequest mxRpcRequest = (MxRpcRequest)handleObject;
                 MxRpcHandleObj mxRpcHandleObj = new MxRpcHandleObj();
-                mxRpcHandleObj.setRequestId(mxRpcHandleObj.getRequestId());
+                mxRpcHandleObj.setRequestId(mxRpcRequest.getRequestId());
                 mxRpcHandleObj.setRequestCtxId(ctxId);
 
                 MxRpcServiceObj mxRpcServiceObj = rpcServiceObjMap.get(mxRpcRequest.getServiceName());
@@ -153,10 +171,7 @@ public class MxRpcClientManService {
                     if (visitCtxId == null){
                         isGetPro = false;
                     } else {
-                        MxRpcHandleObj rpcHandleObj = new MxRpcHandleObj();
-                        rpcHandleObj.setRequestCtxId(ctxId);
-                        rpcHandleObj.setResponseCtxId(visitCtxId);
-                        rpcHandleObj.setRequestId(mxRpcRequest.getRequestId());
+                        mxRpcHandleObj.setResponseCtxId(visitCtxId);
                         taskMap.put(mxRpcHandleObj.getRequestId(),mxRpcHandleObj);
                     }
                 }
@@ -172,7 +187,7 @@ public class MxRpcClientManService {
             } else if (handleObject instanceof MxRpcResponse){
                 //回复对象
                 MxRpcResponse mxRpcResponse = (MxRpcResponse)handleObject;
-                MxRpcHandleObj mxRpcHandleObj = taskMap.get(mxRpcResponse.getRequestId());
+                MxRpcHandleObj mxRpcHandleObj = taskMap.remove(mxRpcResponse.getRequestId());
                 if (mxRpcHandleObj == null ||
                     !ctxId.equalsIgnoreCase(mxRpcHandleObj.getResponseCtxId())){
                     //未知回复 丢弃
@@ -187,6 +202,10 @@ public class MxRpcClientManService {
                 }
             } else if (handleObject instanceof MxRpcHeartBeat){
                 //接收到心跳包
+                MxRpcHeartBeat mxRpcHeartBeat = new MxRpcHeartBeat();
+                mxRpcHeartBeat.setClientId("server");
+                mxRpcHeartBeat.setServiceName("server");
+                context.writeAndFlush(FastJsonUtil.toJSONString(mxRpcHeartBeat));
             }
 
         } catch (Exception e){
@@ -194,4 +213,7 @@ public class MxRpcClientManService {
         }
     }
 
+    public void setVisitStrategy(ProviderVisitStrategyEnums visitStrategy) {
+        this.visitStrategy = visitStrategy;
+    }
 }

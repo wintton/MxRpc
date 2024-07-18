@@ -31,7 +31,7 @@ public class MxRpcClientConfig {
     /**
      * 提供服务名称
      */
-    @Value("${mx-rpc.client.serviceName:hello}")
+    @Value("${mx-rpc.client.serviceName:ALL}")
     private String serviceName;
 
     /**

@@ -8,6 +8,9 @@ mxRpc:
     serviceName: ALL
     #访问权重 访问策略为权重方式下生效
     weight: 1
+    #最长等待时间 单位s -1不限制
+    maxWaitTime: 30
+    #服务端连接参数
     link:
       #服务端IP
       host: 127.0.0.1

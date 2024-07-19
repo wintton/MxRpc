@@ -24,4 +24,7 @@ public class MxRpcServerConfig {
      */
     @Value("${mxRpc.server.debug:true}")
     private Boolean debug;
+
+
+
 }

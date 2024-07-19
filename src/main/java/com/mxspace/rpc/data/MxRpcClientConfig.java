@@ -51,4 +51,10 @@ public class MxRpcClientConfig {
      */
     @Value("${mxRpc.client.debug:true}")
     private Boolean debug;
+
+    /**
+     * 最长等待时间
+     */
+    @Value("${mxRpc.client.maxWaitTime:60}")
+    private Integer maxWaitTime;
 }

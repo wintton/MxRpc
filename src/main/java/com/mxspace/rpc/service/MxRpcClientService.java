@@ -160,7 +160,12 @@ public class MxRpcClientService {
         taskMap.put(mxRpcRequest.getRequestId(),futureRpcData);
         this.ctx.writeAndFlush(FastJsonUtil.toJSONString(mxRpcRequest));
         try {
-            MxRpcResponse mxRpcResponse = futureRpcData.get(60, TimeUnit.SECONDS);
+            MxRpcResponse mxRpcResponse;
+            if (mxRpcClientConfig.getMaxWaitTime() < 0){
+                mxRpcResponse = futureRpcData.get();
+            } else {
+                mxRpcResponse = futureRpcData.get(mxRpcClientConfig.getMaxWaitTime(), TimeUnit.SECONDS);
+            }
             return mxRpcResponse;
         } catch (InterruptedException e) {
            log.error("MxRpcClient",e);

@@ -1,3 +1,4 @@
+```
 大家好，本项目是作者用于一台云服务器的情况下，又不想购买多台云服务，但又有不少本地服务器的背景下编写的代码
 代码中使用netty 与服务端简历长连接，并实时发送消息获取需要的服务，由客户端进行计算在返回给服务端中专给目标客户端
 这样就可以实现一台服务器，多台本地电脑提供计算或耗时服务，从而减少成本
@@ -40,3 +41,12 @@ mx-rpc:<br>
 @MxRpcResource(name="服务名称")
 
 属性调用这个标签会生成一个代理对象，进行远程访问调用
+
+Maven 地址：
+
+<dependency>
+    <groupId>io.gitee.mxspace</groupId>
+    <artifactId>MxRpc</artifactId>
+    <version>1.0-RELEASE</version>
+</dependency>
+```

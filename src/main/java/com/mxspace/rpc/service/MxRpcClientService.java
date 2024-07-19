@@ -132,7 +132,7 @@ public class MxRpcClientService {
     }
 
     /**
-     * 发送请求
+     * 异步发送请求
      * @param mxRpcRequest
      * @return
      */

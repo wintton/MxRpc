@@ -21,6 +21,11 @@ public class MxRpcRequest {
     private String serviceName;
 
     /**
+     * 请求提供的服务类版本号 不给就匹配所有
+     */
+    private String serviceVersion;
+
+    /**
      * 类名
      */
     private String className;

@@ -23,6 +23,11 @@ public class MxRpcLogin implements Serializable {
     private String serviceName;
 
     /**
+     * 提供的服务名称
+     */
+    private String serviceVersion;
+
+    /**
      * 客户端ID
      */
     private String clientId;
@@ -36,5 +41,6 @@ public class MxRpcLogin implements Serializable {
      * 权重
      */
     private Integer weight = 1;
+
 
 }

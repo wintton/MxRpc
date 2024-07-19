@@ -52,6 +52,7 @@ public class MxRpcClientService {
         mxRpcLogin.setServiceName(mxRpcClientConfig.getServiceName());
         mxRpcLogin.setLoginPassword(mxRpcClientConfig.getPassword());
         mxRpcLogin.setWeight(mxRpcClientConfig.getWeight());
+        mxRpcLogin.setServiceVersion(mxRpcClientConfig.getServiceVersion());
         ctx.writeAndFlush(FastJsonUtil.toJSONString(mxRpcLogin));
     }
 
@@ -69,7 +70,7 @@ public class MxRpcClientService {
      * @param msg
      */
     public void handleMsg(ChannelHandlerContext ctx, String msg) {
-        log.info("客户端收到消息：{}",msg);
+        logInfo("客户端收到消息：{}",msg);
         if (msg.indexOf("}{") > 0){
             msg.replaceAll("\\}\\{","}" + FastJsonUtil.END_CODE + "{");
             String[] split = msg.split(FastJsonUtil.END_CODE);
@@ -171,4 +172,9 @@ public class MxRpcClientService {
         return null;
     }
 
+    private void logInfo(String info,String msg){
+        if (mxRpcClientConfig.getDebug()){
+            log.info(info,msg);
+        }
+    }
 }

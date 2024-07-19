@@ -39,6 +39,7 @@ public class MxRpcProxy implements InvocationHandler {
         MxRpcResource annotation = proxy.getClass().getAnnotation(MxRpcResource.class);
         if (annotation != null){
             rpcRequest.setServiceName(annotation.name());
+            rpcRequest.setServiceVersion(annotation.version());
         } else {
             rpcRequest.setServiceName("ALL");
         }

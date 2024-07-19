@@ -38,6 +38,11 @@ public class MxRpcProviderObj {
     private String serviceName;
 
     /**
+     * 版本号
+     */
+    private String serviceVersion;
+
+    /**
      * 连接对象
      */
     private ChannelHandlerContext context;

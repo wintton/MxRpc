@@ -1,10 +1,12 @@
 package com.mxspace.rpc.data;
 
 import com.mxspace.rpc.util.MxRpcRequest;
+import io.netty.util.internal.StringUtil;
 import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 服务对象
@@ -75,9 +77,19 @@ public class MxRpcServiceObj {
      * @return
      */
     private MxRpcProviderObj getNextProvider(MxRpcRequest rpcRequest) {
+        String serviceVersion = rpcRequest.getServiceVersion();
+        List<MxRpcProviderObj> providerObjList = this.providerObjList;
+        if (!StringUtil.isNullOrEmpty(serviceVersion)){
+            providerObjList = providerObjList.stream()
+                    .filter(item -> item.getServiceVersion().equalsIgnoreCase(rpcRequest.getServiceVersion()))
+                    .collect(Collectors.toList());
+        }
         MxRpcProviderObj mxRpcProviderObj = null;
         switch (visitStrategy){
             case 0:
+                if (providerObjList.isEmpty()){
+                    break;
+                }
                 //轮询
                 if (nextSendIndex >= providerObjList.size()){
                     nextSendIndex = 0;

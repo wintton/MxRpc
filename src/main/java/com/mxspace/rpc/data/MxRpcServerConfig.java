@@ -12,10 +12,16 @@ import org.springframework.stereotype.Component;
 public class MxRpcServerConfig {
 
 
-    @Value("${mx-rpc.server.port:8081}")
-    private int port;
+    @Value("${mxRpc.server.port:8081}")
+    private Integer port;
 
 
-    @Value("${mx-rpc.server.password:123456789}")
+    @Value("${mxRpc.server.password:123456789}")
     private String password;
+
+    /**
+     * 打印日志
+     */
+    @Value("${mxRpc.server.debug:true}")
+    private Boolean debug;
 }

@@ -12,31 +12,43 @@ import org.springframework.stereotype.Component;
 @Component
 public class MxRpcClientConfig {
 
-    @Value("${mx-rpc.client.link.host:127.0.0.1}")
+    @Value("${mxRpc.client.link.host:127.0.0.1}")
     private String serverHost;
 
 
-    @Value("${mx-rpc.client.link.port:8081}")
-    private int serverPort;
+    @Value("${mxRpc.client.link.port:8082}")
+    private Integer serverPort;
 
-    @Value("${mx-rpc.client.link.password:123456789}")
+    @Value("${mxRpc.client.link.password:123456789}")
     private String password;
 
     /**
      * 客户端ID
      */
-    @Value("${mx-rpc.client.id:11101}")
+    @Value("${mxRpc.client.id:11101}")
     private String clientId;
 
     /**
      * 提供服务名称
      */
-    @Value("${mx-rpc.client.serviceName:ALL}")
+    @Value("${mxRpc.client.serviceName:ALL}")
     private String serviceName;
 
     /**
      * 提供服务名称
      */
-    @Value("${mx-rpc.client.weight:1}")
+    @Value("${mxRpc.client.serviceVersion:}")
+    private String serviceVersion;
+
+    /**
+     * 提供服务名称
+     */
+    @Value("${mxRpc.client.weight:1}")
     private Integer weight;
+
+    /**
+     * 打印日志
+     */
+    @Value("${mxRpc.client.debug:true}")
+    private Boolean debug;
 }

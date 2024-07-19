@@ -1,7 +1,7 @@
-
-mx-rpc:
+mxRpc:
   #客户端配置消息
   client:
+    debug: true
     #客户端ID标识
     id: 1011
     #提供的服务名称
@@ -12,12 +12,13 @@ mx-rpc:
       #服务端IP
       host: 127.0.0.1
       #服务端端口
-      port: 8081
+      port: 8082
       #服务端密码
       password: 123456789
   #服务端配置消息
   server:
+    debug: true
     #监听端口号
-    port: 8081
+    port: 8082
     #服务端密码
     password: 123456789

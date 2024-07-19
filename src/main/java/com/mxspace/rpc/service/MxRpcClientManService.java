@@ -100,6 +100,7 @@ public class MxRpcClientManService {
         mxRpcProviderObj.setCtxId(ctxId);
         mxRpcProviderObj.setWeight(mxRpcLogin.getWeight());
         mxRpcProviderObj.setServiceName(mxRpcLogin.getServiceName());
+        mxRpcProviderObj.setServiceVersion(mxRpcLogin.getServiceVersion());
         mxRpcProviderObj.setContext(context);
         MxRpcServiceObj mxRpcServiceObj = rpcServiceObjMap.computeIfAbsent(mxRpcLogin.getServiceName(),k -> {
             MxRpcServiceObj mxRpcServiceObj1 = new MxRpcServiceObj();
@@ -133,7 +134,8 @@ public class MxRpcClientManService {
                 return;
             }
             String ctxId = getClientId(context);
-            log.info("服务端收到消息：{}",dataJson);
+
+            logInfo("服务端收到消息：{}",dataJson);
 
             boolean isLogin = ctxId != null;
             Object handleObject = FastJsonUtil.parse(dataJson);
@@ -191,7 +193,7 @@ public class MxRpcClientManService {
                 if (mxRpcHandleObj == null ||
                     !ctxId.equalsIgnoreCase(mxRpcHandleObj.getResponseCtxId())){
                     //未知回复 丢弃
-                    log.info("丢弃消息：{}",mxRpcResponse.getRequestId());
+                    logInfo("丢弃消息：{}",mxRpcResponse.getRequestId());
                 } else {
                     String requestCtxId = mxRpcHandleObj.getRequestCtxId();
                     MxRpcProviderObj mxRpcProviderObj = rpcProviderObjMap.get(requestCtxId);
@@ -215,5 +217,11 @@ public class MxRpcClientManService {
 
     public void setVisitStrategy(ProviderVisitStrategyEnums visitStrategy) {
         this.visitStrategy = visitStrategy;
+    }
+    
+    private void logInfo(String info,String msg){
+        if (mxRpcServerConfig.getDebug()){
+            log.info(info,msg);
+        }
     }
 }
